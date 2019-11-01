@@ -26,7 +26,7 @@ class CollectionBuilder
   end
 
   def search
-    collection.where('name LIKE :term OR text LIKE :term', term: "%#{params[:term]}%")
+    collection.where('LOWER(name) LIKE :term OR LOWER(text) LIKE :term', term: "%#{params[:term].downcase}%")
   end
 
   def sort
