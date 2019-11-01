@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+commited_files=`git diff --cached --name-status | (grep -E "^[AM]" || true) | cut -f2-`
+
+rb_pattern=$(echo -n '\.rb
+\.gemspec
+\.jbuilder
+\.rake
+config\.ru
+Gemfile
+Rakefile' | tr "\\n" '|')
+
+rb_files=`grep -E ".*($rb_pattern)$" <<< "$commited_files" || true`
+if [ -n "$rb_files" ]; then
+  echo "Running rubocop on $(wc -l <<< "$rb_files") files..."
+  bundle exec rubocop $rb_files --force-exclusion # &&
+    echo 'Running brakeman' &&
+    bundle exec brakeman -Azq
+fi
+
+echo 'Running rspec'
+bundle exec ruby ./bin/git-hooks/rspec-pre-commit.rb
+
+slim_files=`grep -E "\.slim($|\.)" <<< "$commited_files" || true`
+if [ -n "$slim_files" ]; then
+  echo "Running slim-lint on $(wc -l <<< "$slim_files") files..."
+  bundle exec slim-lint $slim_files
+fi
+
+scss_files=`grep -E "\.scss($|\.)" <<< "$commited_files" || true`
+if [ -n "$scss_files" ]; then
+  echo "Running scss-lint on $(wc -l <<< "$scss_files") files..."
+  bundle exec scss-lint $scss_files
+fi
